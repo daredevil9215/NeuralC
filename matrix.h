@@ -3,11 +3,19 @@
 #include <time.h>
 #include <math.h>
 
-struct Matrix
+typedef struct Matrix
 {
     int rows, columns;
     double* data;
-};
+} Matrix;
+
+typedef struct Layer
+{
+    Matrix* weights;
+    Matrix* output;
+    Matrix* dweights;
+    Matrix* dinputs;
+} Layer;
 
 double rand_gen() {
    return ( (double)(rand()) + 1. )/( (double)(RAND_MAX) + 1. );
@@ -19,9 +27,9 @@ double normalRandom() {
    return cos(2*3.14*v2)*sqrt(-2.*log(v1));
 }
 
-struct Matrix* initMatrix(int n, int m) {
+Matrix* initMatrix(int n, int m) {
 
-    struct Matrix* mat = (struct Matrix*)malloc(sizeof(struct Matrix));
+    Matrix* mat = (Matrix*)malloc(sizeof( Matrix));
     mat->rows = n;
     mat->columns = m;
     mat->data = (double*)malloc(sizeof(double) * n * m);
@@ -32,7 +40,7 @@ struct Matrix* initMatrix(int n, int m) {
 
 }
 
-void printMatrix(struct Matrix* mptr) {
+void printMatrix(Matrix* mptr) {
 
     printf("[");
 
@@ -56,9 +64,9 @@ void printMatrix(struct Matrix* mptr) {
     printf("]\n");
 }
 
-struct Matrix* dot(struct Matrix* mptr1, struct Matrix* mptr2) {
+Matrix* dot(Matrix* mptr1, Matrix* mptr2) {
     if (mptr1->columns == mptr2->rows) {
-        struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+        Matrix* result = (Matrix*)malloc(sizeof(Matrix));
         result->rows = mptr1->rows;
         result->columns = mptr2->columns;
         result->data = (double*)calloc(result->rows * result->columns, sizeof(double));
@@ -74,8 +82,8 @@ struct Matrix* dot(struct Matrix* mptr1, struct Matrix* mptr2) {
     }
 }
 
-struct Matrix* transpose(struct Matrix* mptr) {
-    struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+Matrix* transpose( Matrix* mptr) {
+    Matrix* result = (Matrix*)malloc(sizeof(Matrix));
     result->rows = mptr->columns;
     result->columns = mptr->rows;
     result->data = malloc(sizeof(double) * result->rows * result->columns);
@@ -87,8 +95,8 @@ struct Matrix* transpose(struct Matrix* mptr) {
     return result;
 }
 
-struct Matrix* relu(struct Matrix* mptr) {
-    struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+ Matrix* relu(Matrix* mptr) {
+     Matrix* result = (Matrix*)malloc(sizeof(Matrix));
     result->rows = mptr->rows;
     result->columns = mptr->columns;
     result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
@@ -103,8 +111,8 @@ struct Matrix* relu(struct Matrix* mptr) {
     return result;
 }
 
-struct Matrix* sigmoid(struct Matrix* mptr) {
-    struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+Matrix* sigmoid(Matrix* mptr) {
+    Matrix* result = (Matrix*)malloc(sizeof(Matrix));
     result->rows = mptr->rows;
     result->columns = mptr->columns;
     result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
@@ -114,8 +122,8 @@ struct Matrix* sigmoid(struct Matrix* mptr) {
     return result;
 }
 
-struct Matrix* natural_log(struct Matrix* mptr) {
-    struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+Matrix* natural_log(Matrix* mptr) {
+    Matrix* result = (Matrix*)malloc(sizeof(Matrix));
     result->rows = mptr->rows;
     result->columns = mptr->columns;
     result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
@@ -125,11 +133,11 @@ struct Matrix* natural_log(struct Matrix* mptr) {
     return result;
 }
 
-struct Matrix* hadamard_product(struct Matrix* mptr1, struct Matrix* mptr2) {
+ Matrix* hadamard_product( Matrix* mptr1,  Matrix* mptr2) {
 
     if(mptr1->rows == mptr2->rows && mptr2->columns == mptr2->columns) {
 
-        struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+        Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
         result->rows = mptr1->rows;
         result->columns = mptr1->columns;
         result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
@@ -140,9 +148,9 @@ struct Matrix* hadamard_product(struct Matrix* mptr1, struct Matrix* mptr2) {
     }
 }
 
-struct Matrix* clip(struct Matrix* mptr, double lower, double upper) {
+ Matrix* clip( Matrix* mptr, double lower, double upper) {
 
-    struct Matrix* result = (struct Matrix*)malloc(sizeof(struct Matrix));
+    Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
     result->rows = mptr->rows;
     result->columns = mptr->columns;
     result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
@@ -163,7 +171,7 @@ struct Matrix* clip(struct Matrix* mptr, double lower, double upper) {
 
 }
 
-double BCE_Loss(struct Matrix* y_true, struct Matrix* y_pred) {
+double BCE_Loss( Matrix* y_true,  Matrix* y_pred) {
     double result = 0;
     y_pred = clip(y_pred, 1e-7, 1.0 - 1e-7);
     if(y_true->rows == y_pred->rows && y_true->columns == y_pred->columns) {
@@ -174,4 +182,84 @@ double BCE_Loss(struct Matrix* y_true, struct Matrix* y_pred) {
         return result / (y_true->rows * y_true->columns); 
     }
 
+}
+
+ Matrix* derivative_sigmoid( Matrix* mptr) {
+     Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
+    result->rows = mptr->rows;
+    result->columns = mptr->columns;
+    result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
+    for(int i = 0; i < result->rows * result->columns; i++) {
+        result->data[i] = (1 / (1 + exp(- mptr->data[i]))) * (1 - 1 / (1 + exp(- mptr->data[i])));
+    }
+    return result;
+}
+
+ Matrix* derivative_relu( Matrix* mptr) {
+     Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
+    result->rows = mptr->rows;
+    result->columns = mptr->columns;
+    result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
+    for(int i = 0; i < result->rows * result->columns; i++) {
+        if(mptr->data[i] > 0) {
+            result->data[i] = 1;
+        }
+        else {
+            result->data[i] = 0;
+        }
+    }
+    return result;
+}
+
+double MSE_Loss( Matrix* y_pred,  Matrix* y_true) {
+    double result = 0;
+    if(y_true->rows == y_pred->rows && y_true->columns == y_pred->columns) {
+        for(int i = 0; i < y_true->rows * y_true->columns; i++) {
+            result += 0.5 * pow(y_pred->data[i] - y_true->data[i], 2);
+        }
+        return result / (y_true->rows * y_true->columns); 
+    }
+
+}
+
+ Matrix* derivative_MSE_Loss( Matrix* y_pred,  Matrix* y_true) {
+    if(y_true->rows == y_pred->rows && y_true->columns == y_pred->columns) {
+         Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
+        result->rows = y_true->rows;
+        result->columns = y_true->columns;
+        result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
+        for(int i = 0; i < y_true->rows * y_true->columns; i++) {
+            result->data[i] = y_pred->data[i] - y_true->data[i];
+        }
+        return result;
+    }
+
+}
+
+Matrix* update_weights( Matrix* weights,  Matrix* dweights, double learning_rate) {
+     Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
+    result->rows = weights->rows;
+    result->columns = weights->columns;
+    result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
+    for(int i = 0; i < result->rows * result->columns; i++) {
+        result->data[i] = weights->data[i] - learning_rate * dweights->data[i];
+    }
+    return result;
+}
+
+Matrix* MSE_Loss_matrix( Matrix* y_pred,  Matrix* y_true) {
+    Matrix* result = ( Matrix*)malloc(sizeof( Matrix));
+    result->rows = y_pred->rows;
+    result->columns = y_pred->columns;
+    result->data = (double*)malloc(sizeof(double) * result->rows * result->columns);
+    for(int i = 0; i < result->rows * result->columns; i++) {
+        result->data[i] = pow(y_pred->data[i] - y_true->data[i], 2);
+    }
+    return result;
+}
+
+Layer* initLayer(int n, int m) {
+    Layer* result = (Layer*)malloc(sizeof(Layer));
+    result->weights = initMatrix(n, m);
+    return result;
 }
