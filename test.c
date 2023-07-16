@@ -1,4 +1,5 @@
 #include "matrix.h"
+#include "classes.h"
 
 int main() {
 
@@ -23,44 +24,37 @@ int main() {
     Layer* layer1 = initLayer(2, 10);
     Layer* layer2 = initLayer(10, 1);
 
-    Matrix* weights1 = initMatrix(2, 10);
-    Matrix* weights2 = initMatrix(10, 1);
-
-    Matrix* layer1_dweights = initMatrix(1, 1); 
-    Matrix* layer1_output = initMatrix(1, 1);
     Matrix* sig1_output = initMatrix(1, 1); 
-    Matrix* layer2_dweights = initMatrix(1, 1); 
-    Matrix* layer2_output = initMatrix(1, 1);
     Matrix* sig2_output = initMatrix(1, 1);
     Matrix* dvalues = initMatrix(1, 1);
 
-    for(int i = 0; i < 5000; i++) {
+    for(int i = 0; i < 10000; i++) {
 
         /* Forward pass */
-        layer1_output = dot(ulaz, weights1);
-        sig1_output = sigmoid(layer1_output);
-        layer2_output = dot(sig1_output, weights2);
-        sig2_output = sigmoid(layer2_output);
+        layer1->output = dot(ulaz, layer1->weights);
+        sig1_output = sigmoid(layer1->output);
+        layer2->output = dot(sig1_output, layer2->weights);
+        sig2_output = sigmoid(layer2->output);
 
         printf("Error: %f\n", MSE_Loss(sig2_output, izlaz));
 
         /* Backward pass */
         dvalues = derivative_MSE_Loss(sig2_output, izlaz);
-        dvalues = hadamard_product(dvalues, derivative_sigmoid(layer2_output));
-        layer2_dweights = dot(transpose(sig1_output), dvalues);
-        dvalues = dot(dvalues, transpose(weights2));
-        dvalues = hadamard_product(dvalues, derivative_sigmoid(layer1_output));
-        layer1_dweights = dot(transpose(ulaz), dvalues);
+        dvalues = hadamard_product(dvalues, derivative_sigmoid(layer2->output));
+        layer2->dweights = dot(transpose(sig1_output), dvalues);
+        dvalues = dot(dvalues, transpose(layer2->weights));
+        dvalues = hadamard_product(dvalues, derivative_sigmoid(layer1->output));
+        layer1->dweights = dot(transpose(ulaz), dvalues);
 
-        weights1 = update_weights(weights1, layer1_dweights, 10);
-        weights2 = update_weights(weights2, layer2_dweights, 10);
+        layer1->weights = update_weights(layer1->weights, layer1->dweights, 10);
+        layer2->weights = update_weights(layer2->weights, layer2->dweights, 10);
 
     }
 
-    layer1_output = dot(ulaz, weights1);
-    sig1_output = sigmoid(layer1_output);
-    layer2_output = dot(sig1_output, weights2);
-    sig2_output = sigmoid(layer2_output);
+    layer1->output = dot(ulaz, layer1->weights);
+    sig1_output = sigmoid(layer1->output);
+    layer2->output = dot(sig1_output, layer2->weights);
+    sig2_output = sigmoid(layer2->output);
 
     printf("Rezultat:\n");
     printMatrix(sig2_output);

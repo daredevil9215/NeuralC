@@ -3,20 +3,6 @@
 #include <time.h>
 #include <math.h>
 
-typedef struct Matrix
-{
-    int rows, columns;
-    double* data;
-} Matrix;
-
-typedef struct Layer
-{
-    Matrix* weights;
-    Matrix* output;
-    Matrix* dweights;
-    Matrix* dinputs;
-} Layer;
-
 double rand_gen() {
    return ( (double)(rand()) + 1. )/( (double)(RAND_MAX) + 1. );
 }
