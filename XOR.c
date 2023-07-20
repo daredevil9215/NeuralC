@@ -23,8 +23,8 @@ int main() {
     y->data[3] = 0;
 
     /* Layers */
-    Layer* layer1 = initLayer(2, 5);
-    Layer* layer2 = initLayer(5, 1);
+    Layer* layer1 = initLayer(2, 4);
+    Layer* layer2 = initLayer(4, 1);
 
     /* Variables for storing outputs */
     Matrix* sig1_output = initMatrix(1, 1); 
@@ -56,10 +56,16 @@ int main() {
 
     }
 
+    Matrix* X_test = initMatrix(1, 2);
+    X_test->data[0] = 0;
+    X_test->data[1] = 1;
+
+    layer1->output = dot(X_test, layer1->weights);
+    sig1_output = sigmoid(layer1->output);
+    layer2->output = dot(sig1_output, layer2->weights);
+    sig2_output = sigmoid(layer2->output);
+
     printf("Result:\n");
     printMatrix(sig2_output);
-    printf("Error matrix:\n");
-    printMatrix(MSE_Loss_matrix(sig2_output, y));
-
 
 }
